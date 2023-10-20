@@ -2548,6 +2548,7 @@ dependencies = [
  "nix 0.26.4",
  "regex",
  "scopeguard",
+ "serde",
  "winapi",
 ]
 

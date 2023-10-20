@@ -3,11 +3,10 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx,vue,css}",
-    "node_modules/flowbite-vue/**/*.{js,jsx,ts,tsx}",
-    "node_modules/flowbite/**/*.{js,jsx,ts,tsx}",
+    "./node_modules/equal-vue/dist/theme/*.{js,ts,json}",
   ],
   theme: {
     extend: {},
   },
-  plugins: [require("flowbite/plugin")],
+  plugins: [],
 };
