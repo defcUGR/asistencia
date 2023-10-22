@@ -154,9 +154,9 @@ fn main() {
             get_serial_ports,
             process_csv
         ])
-        .on_window_event(move |ev| match ev.event() {
-            &WindowEvent::CloseRequested { .. } => EMIT_IDS.store(false, Ordering::SeqCst),
-            &_ => {}
+        .on_window_event(move |ev| match *ev.event() {
+            WindowEvent::CloseRequested { .. } => EMIT_IDS.store(false, Ordering::SeqCst),
+            _ => {}
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
