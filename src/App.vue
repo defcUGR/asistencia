@@ -79,8 +79,8 @@
             shadow="hover"
             :class="selectedPort === 0 ? '!border-sky-400' : ''"
           >
-            <h3 class="font-bold text-lg">Keyboard</h3>
-            <p>Use Keyboard to simulate input</p>
+            <h3 class="font-bold text-lg">Teclado</h3>
+            <p>Simula la entrada del lector usando el teclado</p>
           </el-card>
         </li>
         <li
