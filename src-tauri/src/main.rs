@@ -10,6 +10,7 @@ use arboard::Clipboard;
 use serde::{Deserialize, Deserializer, Serialize};
 use serialport::{SerialPort, SerialPortInfo};
 use tauri::{Manager, WindowEvent};
+use ts_rs::TS;
 
 static EMIT_IDS: AtomicBool = AtomicBool::new(true);
 static mut SCAN_HANDLE: Mutex<Option<JoinHandle<Result<(), String>>>> = Mutex::new(None);
@@ -64,50 +65,75 @@ where
     Ok(v)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
 struct RawAttendant {
-    #[serde(rename = "Apellidos")]
+    #[serde(rename(deserialize = "Apellidos"))]
     last_name: String,
-    #[serde(rename = "Nombre")]
+    #[serde(rename(deserialize = "Nombre"))]
     name: String,
-    #[serde(rename = "Nombre completo")]
+    #[serde(rename(deserialize = "Nombre completo"))]
     full_name: String,
-    #[serde(rename = "Correo UGR")]
+    #[serde(rename(deserialize = "Correo UGR"))]
     email: String,
-    #[serde(rename = "NIF")]
+    #[serde(rename(deserialize = "NIF"))]
     nif: Option<String>,
-    #[serde(rename = "TUI")]
+    #[serde(rename(deserialize = "TUI"))]
     tui: Option<String>,
-    #[serde(rename = "Grado")]
+    #[serde(rename(deserialize = "Grado"))]
     degree: Option<String>,
-    #[serde(rename = "Curso")]
+    #[serde(rename(deserialize = "Curso"))]
     course: Option<String>,
-    #[serde(rename = "Grupo")]
+    #[serde(rename(deserialize = "Grupo"))]
     group: Option<String>,
-    #[serde(rename = "Delegadx", deserialize_with = "vec_deserialize")]
+    #[serde(rename(deserialize = "Delegadx"), deserialize_with = "vec_deserialize")]
     delegado: Vec<String>,
-    #[serde(rename = "Subdelegadx", deserialize_with = "vec_deserialize")]
+    #[serde(
+        rename(deserialize = "Subdelegadx"),
+        deserialize_with = "vec_deserialize"
+    )]
     subdelegado: Vec<String>,
-    #[serde(rename = "Electo", deserialize_with = "vec_deserialize")]
+    #[serde(rename(deserialize = "Electo"), deserialize_with = "vec_deserialize")]
     electo: Vec<String>,
-    #[serde(rename = "Junta de Centro", deserialize_with = "vec_deserialize")]
+    #[serde(
+        rename(deserialize = "Junta de Centro"),
+        deserialize_with = "vec_deserialize"
+    )]
     junta_de_centro: Vec<String>,
-    #[serde(rename = "Claustro", deserialize_with = "vec_deserialize")]
+    #[serde(rename(deserialize = "Claustro"), deserialize_with = "vec_deserialize")]
     claustro: Vec<String>,
 
-    #[serde(rename = "Pronombres")]
+    #[serde(
+        rename(deserialize = "V. Actividades"),
+        deserialize_with = "vec_deserialize"
+    )]
+    v_actividades: Vec<String>,
+    #[serde(
+        rename(deserialize = "V. Comunicación"),
+        deserialize_with = "vec_deserialize"
+    )]
+    v_comunicacion: Vec<String>,
+    #[serde(
+        rename(deserialize = "V. Extensión"),
+        deserialize_with = "vec_deserialize"
+    )]
+    v_extension: Vec<String>,
+
+    #[serde(rename(deserialize = "Pronombres"))]
     pronouns: Option<String>,
-    #[serde(rename = "Apodo")]
+    #[serde(rename(deserialize = "Apodo"))]
     nickname: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
 struct AttendantChecks {
     is_delegado: bool,
     is_subdelegado: bool,
     is_electo: bool,
     is_junta_de_centro: bool,
     is_claustro: bool,
+    is_voluntario: bool,
 }
 
 impl AttendantChecks {
@@ -119,11 +145,15 @@ impl AttendantChecks {
             is_electo: is(&att.electo),
             is_junta_de_centro: is(&att.junta_de_centro),
             is_claustro: is(&att.claustro),
+            is_voluntario: is(&att.v_actividades)
+                || is(&att.v_comunicacion)
+                || is(&att.v_extension),
         }
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
 struct Attendant {
     raw: RawAttendant,
     checks: AttendantChecks,
