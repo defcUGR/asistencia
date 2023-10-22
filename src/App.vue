@@ -131,7 +131,7 @@
           <el-button text type="info" @click="dataDialogOpen = true"
             >Ver datos completos</el-button
           >
-          <el-button type="primary">
+          <el-button type="primary" @click="exportCSV">
             <el-icon class="el-icon--left"><IconFileTypeCsv /></el-icon>
             Exportar CSV
           </el-button>
@@ -172,6 +172,12 @@
           <VueJsonPretty :data="att" />
         </el-dialog>
 
+        <div
+          is-dot
+          type="success"
+          v-if="att.new"
+          class="inline-block h-3 mr-2 aspect-square w-auto bg-green-400 rounded-full"
+        ></div>
         <h3 class="inline font-bold text-lg mr-2" v-if="att.data.full_name">
           {{ att.data.full_name }}
         </h3>
@@ -430,4 +436,7 @@ const updateAttendant = (idx: number) => {
 };
 
 const deleteAttendant = (idx: number) => scanned.value.splice(idx, 1);
+
+const exportCSV = () =>
+  invoke("export_csv", { data: scanned.value.map((sc) => sc.data) });
 </script>

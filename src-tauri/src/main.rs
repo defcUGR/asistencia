@@ -173,13 +173,38 @@ fn process_csv(path: &str) -> Result<Vec<Attendant>, String> {
     Ok(vec)
 }
 
+#[tauri::command]
+fn export_csv(data: Vec<RawAttendant>) -> Result<String, String> {
+    // This gets blocked
+    let file_path = match tauri::api::dialog::blocking::FileDialogBuilder::new()
+        .set_title("Guardar CSV")
+        .save_file()
+    {
+        Some(p) => p,
+        None => {
+            return Err("The user did not select a location for the file to be saved".to_owned())
+        }
+    };
+
+    // let mut file = std::fs::File::create(file_path);
+    let mut wtr = csv::Writer::from_path(&file_path).map_err(|e| e.to_string())?;
+
+    for r in data {
+        wtr.serialize(r).map_err(|e| e.to_string())?;
+    }
+    wtr.flush().map_err(|e| e.to_string())?;
+
+    Ok(file_path.to_str().unwrap_or("ERROR").to_owned())
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             copy,
             start_scan,
             get_serial_ports,
-            process_csv
+            process_csv,
+            export_csv
         ])
         .on_window_event(move |ev| match *ev.event() {
             WindowEvent::CloseRequested { .. } => EMIT_IDS.store(false, Ordering::SeqCst),
