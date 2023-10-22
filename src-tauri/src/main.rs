@@ -7,6 +7,7 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use arboard::Clipboard;
+use serde::{Deserialize, Deserializer, Serialize};
 use serialport::{SerialPort, SerialPortInfo};
 use tauri::{Manager, WindowEvent};
 
@@ -40,9 +41,119 @@ fn get_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
     serialport::available_ports().map_err(|e| e.to_string())
 }
 
+fn rem_first_and_last(value: &str) -> &str {
+    let mut chars = value.chars();
+    chars.next();
+    chars.next_back();
+    chars.as_str()
+}
+
+fn vec_deserialize<'de, D>(d: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(d)?;
+    if &s == "[]" {
+        return Ok(vec![]);
+    }
+    println!("sss: {:?}", s);
+    let v: Vec<String> = rem_first_and_last(&s)
+        .split(',')
+        .map(|s| rem_first_and_last(s).to_owned())
+        .collect();
+    Ok(v)
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct RawAttendant {
+    #[serde(rename = "Apellidos")]
+    last_name: String,
+    #[serde(rename = "Nombre")]
+    name: String,
+    #[serde(rename = "Nombre completo")]
+    full_name: String,
+    #[serde(rename = "Correo UGR")]
+    email: String,
+    #[serde(rename = "NIF")]
+    nif: Option<String>,
+    #[serde(rename = "TUI")]
+    tui: Option<String>,
+    #[serde(rename = "Grado")]
+    degree: Option<String>,
+    #[serde(rename = "Curso")]
+    course: Option<String>,
+    #[serde(rename = "Grupo")]
+    group: Option<String>,
+    #[serde(rename = "Delegadx", deserialize_with = "vec_deserialize")]
+    delegado: Vec<String>,
+    #[serde(rename = "Subdelegadx", deserialize_with = "vec_deserialize")]
+    subdelegado: Vec<String>,
+    #[serde(rename = "Electo", deserialize_with = "vec_deserialize")]
+    electo: Vec<String>,
+    #[serde(rename = "Junta de Centro", deserialize_with = "vec_deserialize")]
+    junta_de_centro: Vec<String>,
+    #[serde(rename = "Claustro", deserialize_with = "vec_deserialize")]
+    claustro: Vec<String>,
+
+    #[serde(rename = "Pronombres")]
+    pronouns: Option<String>,
+    #[serde(rename = "Apodo")]
+    nickname: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct AttendantChecks {
+    is_delegado: bool,
+    is_subdelegado: bool,
+    is_electo: bool,
+    is_junta_de_centro: bool,
+    is_claustro: bool,
+}
+
+impl AttendantChecks {
+    fn from_attendant(att: &RawAttendant) -> Self {
+        let is = |v: &Vec<String>| v.len() % 2 == 1;
+        Self {
+            is_delegado: is(&att.delegado),
+            is_subdelegado: is(&att.subdelegado),
+            is_electo: is(&att.electo),
+            is_junta_de_centro: is(&att.junta_de_centro),
+            is_claustro: is(&att.claustro),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Attendant {
+    raw: RawAttendant,
+    checks: AttendantChecks,
+}
+
+#[tauri::command]
+fn process_csv(path: &str) -> Result<Vec<Attendant>, String> {
+    println!("Called CSV process");
+    let mut vec = Vec::new();
+    let mut rdr = csv::Reader::from_path(path).map_err(|e| e.to_string())?;
+    println!("Loaded CSV reader {:?}", rdr.headers());
+    for result in rdr.deserialize() {
+        let record: RawAttendant = result.map_err(|e| e.to_string())?;
+        let checks: AttendantChecks = AttendantChecks::from_attendant(&record);
+        vec.push(Attendant {
+            raw: record,
+            checks,
+        });
+    }
+    Ok(vec)
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![copy, start_scan, get_serial_ports])
+        .invoke_handler(tauri::generate_handler![
+            copy,
+            start_scan,
+            get_serial_ports,
+            process_csv
+        ])
         .on_window_event(move |ev| match ev.event() {
             &WindowEvent::CloseRequested { .. } => EMIT_IDS.store(false, Ordering::SeqCst),
             &_ => {}

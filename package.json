@@ -12,6 +12,7 @@
   "dependencies": {
     "@tabler/icons-vue": "^2.39.0",
     "@tauri-apps/api": "^1.5.0",
+    "@vueuse/core": "^10.5.0",
     "element-plus": "^2.4.1",
     "vue": "^3.3.4"
   },
