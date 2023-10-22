@@ -57,7 +57,6 @@ where
     if &s == "[]" {
         return Ok(vec![]);
     }
-    println!("sss: {:?}", s);
     let v: Vec<String> = rem_first_and_last(&s)
         .split(',')
         .map(|s| rem_first_and_last(s).to_owned())
@@ -161,10 +160,8 @@ struct Attendant {
 
 #[tauri::command]
 fn process_csv(path: &str) -> Result<Vec<Attendant>, String> {
-    println!("Called CSV process");
     let mut vec = Vec::new();
     let mut rdr = csv::Reader::from_path(path).map_err(|e| e.to_string())?;
-    println!("Loaded CSV reader {:?}", rdr.headers());
     for result in rdr.deserialize() {
         let record: RawAttendant = result.map_err(|e| e.to_string())?;
         let checks: AttendantChecks = AttendantChecks::from_attendant(&record);
