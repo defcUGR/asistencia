@@ -25,4 +25,4 @@ dist-ssr
 
 # Vite generated files
 components.d.ts
-auto-import.d.ts
+auto-imports.d.ts
