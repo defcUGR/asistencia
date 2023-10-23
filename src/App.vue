@@ -1,4 +1,6 @@
 <template>
+  <ErrorBoundary />
+
   <header
     class="bg-slate-50 dark:bg-slate-950 font-black px-8 py-5 text-3xl dark:text-white tracking-wide"
   >
@@ -152,7 +154,7 @@
 
       <el-card
         v-for="(att, idx) in scanned"
-        :key="att.data.tui"
+        :key="att.data.tui ?? ''"
         class="mt-2 relative !min-h-[110px]"
       >
         <el-text class="!absolute !right-5 !top-5" type="info">{{
@@ -279,6 +281,8 @@ import type { AttendantChecks } from "../src-tauri/bindings/AttendantChecks";
 import type { RawAttendant } from "../src-tauri/bindings/RawAttendant";
 import format from "date-fns/format";
 import { PortService } from "./ports";
+import { raiseError } from "./error";
+import { tryit } from "radash";
 
 useDark();
 
@@ -300,7 +304,7 @@ const openFile = async () => {
   fileError.value = false;
 
   //* Pick
-  const path = await open({
+  const [error, path] = await tryit(open)({
     multiple: false,
     filters: [
       {
@@ -310,7 +314,14 @@ const openFile = async () => {
     ],
     defaultPath: await homeDir(),
   });
-  if (!path || Array.isArray(path)) return;
+  if (error) {
+    raiseError(error);
+    return;
+  }
+  if (Array.isArray(path)) {
+    raiseError("Sólo un archivo CSV soportado");
+    return;
+  }
   filePath.value = path;
 
   //* Process
@@ -344,36 +355,6 @@ const scanned = ref(
     dialogOpen: boolean;
   }[]
 );
-// watch(input, () => {
-//   if (input.value.length !== 7) {
-//     return;
-//   }
-
-//   const readInput = input.value;
-//   input.value = "";
-
-//   const fdUser = userData.value?.find((usr) => usr.raw.tui === readInput);
-
-//   if (fdUser) {
-//     scanned.value.push({
-//       data: fdUser.raw,
-//       checks: fdUser.checks,
-//       new: false,
-//       time: new Date(),
-//       dialogOpen: false,
-//     });
-//   } else {
-//     scanned.value.push({
-//       data: {
-//         tui: readInput,
-//       },
-//       checks: {},
-//       new: true,
-//       time: new Date(),
-//       dialogOpen: false,
-//     });
-//   }
-// });
 
 const tagName = computed(
   () => (key: Checks, pronouns: "F" | "M" | "N" | null | undefined) => {
@@ -414,6 +395,9 @@ const updateAttendant = (idx: number) => {
 
   if (!fdUser) {
     console.error("Full name not found", scanned.value[idx].data.full_name);
+    raiseError(
+      `No se ha podido encontrar a ningún usuario con el nombre ${scanned.value[idx].data.full_name} para actualizar`
+    );
     return;
   }
   scanned.value[idx] = {
@@ -428,18 +412,20 @@ const updateAttendant = (idx: number) => {
 const deleteAttendant = (idx: number) => scanned.value.splice(idx, 1);
 
 const exportCSV = () =>
-  invoke("export_csv", { data: scanned.value.map((sc) => sc.data) });
+  invoke("export_csv", { data: scanned.value.map((sc) => sc.data) }).catch(
+    (error) => raiseError("Error exportando CSV: " + error)
+  );
 
 const scanning = PortService.useScanning();
 
 const getPort = () => ports.value[selectedPort.value];
 
-const enterScanning = () => {
+const enterScanning = async () => {
   configured.value = true;
-  // scanning.value = true;
 
   console.info("Mounting port", ports.value[selectedPort.value]);
-  getPort().install(input);
+  const installSuccess = await getPort().install(input);
+  if (!installSuccess) return;
   getPort().listen(userData, input, scanned);
 };
 

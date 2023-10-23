@@ -10,6 +10,8 @@ import type { RawAttendant } from "../src-tauri/bindings/RawAttendant";
 import type { AttendantChecks } from "../src-tauri/bindings/AttendantChecks";
 import { WatchStopHandle } from "vue";
 import { onKeyStroke } from "@vueuse/core";
+import { tryit } from "radash";
+import { raiseError } from "./error";
 
 interface PortInfo {
   port_name: string;
@@ -55,7 +57,7 @@ class Port {
     };
   }
 
-  public install(input: Ref<string>) {
+  public async install(input: Ref<string>) {
     if (this._info === "keyboard") {
       onKeyStroke(
         ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
@@ -71,9 +73,16 @@ class Port {
           input.value = input.value.slice(0, input.value.length - 1);
       });
     } else {
-      invoke("start_scan", { portName: this._info.port_name });
+      const [err, _] = await tryit(invoke)("start_scan", {
+        portName: this._info.port_name,
+      });
+      if (err) {
+        raiseError(err);
+        return false;
+      }
+      PortService.scanning = true;
     }
-    PortService.scanning = true;
+    return true;
   }
 
   public stop() {
@@ -85,9 +94,15 @@ class Port {
     });
   }
 
-  public restart() {
-    if (this._info !== "keyboard")
-      return invoke("start_scan", { portName: this._info.port_name });
+  public async restart() {
+    if (this._info === "keyboard") return;
+    const [err, _] = await tryit(invoke)("start_scan", {
+      portName: this._info.port_name,
+    });
+    if (err) {
+      raiseError(err);
+      return;
+    }
   }
 
   public async listen(

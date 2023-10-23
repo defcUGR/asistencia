@@ -20,6 +20,9 @@ dependencies:
   element-plus:
     specifier: ^2.4.1
     version: 2.4.1(vue@3.3.6)
+  radash:
+    specifier: ^11.0.0
+    version: 11.0.0
   vue:
     specifier: ^3.3.4
     version: 3.3.6(typescript@5.2.2)
@@ -1407,6 +1410,11 @@ packages:
   /queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
     dev: true
+
+  /radash@11.0.0:
+    resolution: {integrity: sha512-CRWxTFTDff0IELGJ/zz58yY4BDgyI14qSM5OLNKbCItJrff7m7dXbVF0kWYVCXQtPb3SXIVhXvAImH6eT7VLSg==}
+    engines: {node: '>=14.18.0'}
+    dev: false
 
   /read-cache@1.0.0:
     resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
