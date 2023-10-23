@@ -74,7 +74,7 @@
       </div>
       <h2 class="text-xl my-2">Puertos disponibles</h2>
       <ul>
-        <li @click="selectedPort = 0">
+        <!-- <li @click="selectedPort = 0">
           <el-card
             shadow="hover"
             :class="selectedPort === 0 ? '!border-sky-400' : ''"
@@ -82,23 +82,30 @@
             <h3 class="font-bold text-lg">Teclado</h3>
             <p>Simula la entrada del lector usando el teclado</p>
           </el-card>
-        </li>
+        </li> -->
         <li
           v-for="(port, index) in ports"
-          @click="selectedPort = index + 1"
+          @click="selectedPort = index"
           class="mt-2"
         >
           <el-card
             shadow="hover"
-            :class="selectedPort === index + 1 ? '!border-sky-400' : ''"
+            :class="selectedPort === index ? '!border-sky-400' : ''"
           >
-            <h3 class="font-bold text-lg">{{ port.port_name }}</h3>
-            <template v-for="(val, prop) in port"
-              ><p v-if="prop != 'port_name'">
-                <span class="capitalize">{{ prop.replace("_", " ") }}</span
-                >: {{ val }}
-              </p></template
-            >
+            <h3 class="font-bold text-lg">
+              {{ port.info === "keyboard" ? "Teclado" : port.info.port_name }}
+            </h3>
+            <p v-if="port.info === 'keyboard'">
+              Simula la entrada del lector usando el teclado
+            </p>
+            <template v-else>
+              <template v-for="(val, prop) in port.port_type">
+                <p>
+                  <span class="capitalize">{{ prop.replace("_", " ") }}</span
+                  >: {{ val }}
+                </p>
+              </template>
+            </template>
           </el-card>
         </li>
       </ul>
@@ -110,7 +117,7 @@
           @click="
             () =>
               filePath && !fileError && selectedPort !== undefined
-                ? ((configured = true), (scanning = true))
+                ? enterScanning()
                 : {}
           "
         >
@@ -173,8 +180,6 @@
         </el-dialog>
 
         <div
-          is-dot
-          type="success"
           v-if="att.new"
           class="inline-block h-3 mr-2 aspect-square w-auto bg-green-400 rounded-full"
         ></div>
@@ -220,7 +225,7 @@
           type="danger"
           class="w-full"
           :disabled="!(filePath && !fileError && selectedPort !== undefined)"
-          @click="scanning = false"
+          @click="stopScan()"
           v-if="scanning"
         >
           Parar Escáner
@@ -231,7 +236,7 @@
           type="success"
           class="w-full"
           :disabled="!(filePath && !fileError && selectedPort !== undefined)"
-          @click="scanning = true"
+          @click="restartScan()"
           v-else
         >
           Retomar Escáner
@@ -243,7 +248,7 @@
 </template>
 
 <script setup lang="ts">
-import { onKeyStroke, useDark } from "@vueuse/core";
+import { useDark } from "@vueuse/core";
 import {
   IconChevronRight,
   IconUpload,
@@ -266,20 +271,17 @@ import type { Attendant } from "../src-tauri/bindings/Attendant";
 import type { AttendantChecks } from "../src-tauri/bindings/AttendantChecks";
 import type { RawAttendant } from "../src-tauri/bindings/RawAttendant";
 import format from "date-fns/format";
+import { PortService } from "./ports";
 
 useDark();
 
 const configured = ref(false);
-const scanning = ref(false);
 
 const dataDialogOpen = ref(false);
 
-const ports = ref(
-  [] as {
-    port_name: string;
-    port_type: string;
-  }[]
-);
+PortService.fetchPorts();
+
+const ports = PortService.usePorts;
 const selectedPort = ref();
 
 const userData: Ref<Attendant[] | undefined> = ref();
@@ -316,32 +318,13 @@ const openFile = async () => {
 };
 const systemOpenFile = () => systemOpen(filePath.value);
 
-(async () => {
-  ports.value = await invoke("get_serial_ports");
-})();
-
 const availableNames = computed(() =>
   userData.value
     ?.filter((usr) => !usr.raw.tui)
     .map((usr) => ({ value: usr.raw.full_name, label: usr.raw.full_name }))
 );
 
-watch(availableNames, (val) => console.info("names", val));
-
 const input = ref("");
-onKeyStroke(
-  ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-  (e) => {
-    e.preventDefault();
-    if (scanning.value) input.value += e.key;
-  },
-  { dedupe: true }
-);
-onKeyStroke(["Delete", "Backspace"], (e) => {
-  e.preventDefault();
-  if (input.value.length > 0 && scanning)
-    input.value = input.value.slice(0, input.value.length - 1);
-});
 
 type Checks = keyof AttendantChecks;
 
@@ -354,36 +337,36 @@ const scanned = ref(
     dialogOpen: boolean;
   }[]
 );
-watch(input, () => {
-  if (input.value.length !== 7) {
-    return;
-  }
+// watch(input, () => {
+//   if (input.value.length !== 7) {
+//     return;
+//   }
 
-  const readInput = input.value;
-  input.value = "";
+//   const readInput = input.value;
+//   input.value = "";
 
-  const fdUser = userData.value?.find((usr) => usr.raw.tui === readInput);
+//   const fdUser = userData.value?.find((usr) => usr.raw.tui === readInput);
 
-  if (fdUser) {
-    scanned.value.push({
-      data: fdUser.raw,
-      checks: fdUser.checks,
-      new: false,
-      time: new Date(),
-      dialogOpen: false,
-    });
-  } else {
-    scanned.value.push({
-      data: {
-        tui: readInput,
-      },
-      checks: {},
-      new: true,
-      time: new Date(),
-      dialogOpen: false,
-    });
-  }
-});
+//   if (fdUser) {
+//     scanned.value.push({
+//       data: fdUser.raw,
+//       checks: fdUser.checks,
+//       new: false,
+//       time: new Date(),
+//       dialogOpen: false,
+//     });
+//   } else {
+//     scanned.value.push({
+//       data: {
+//         tui: readInput,
+//       },
+//       checks: {},
+//       new: true,
+//       time: new Date(),
+//       dialogOpen: false,
+//     });
+//   }
+// });
 
 const tagName = computed(
   () => (key: Checks, pronouns: "F" | "M" | "N" | null | undefined) => {
@@ -439,4 +422,21 @@ const deleteAttendant = (idx: number) => scanned.value.splice(idx, 1);
 
 const exportCSV = () =>
   invoke("export_csv", { data: scanned.value.map((sc) => sc.data) });
+
+const scanning = PortService.useScanning();
+
+const getPort = () => ports.value[selectedPort.value];
+
+const enterScanning = () => {
+  configured.value = true;
+  // scanning.value = true;
+
+  console.info("Mounting port", ports.value[selectedPort.value]);
+  getPort().install(input);
+  getPort().listen(userData, input, scanned);
+};
+
+const stopScan = () => getPort().stop();
+
+const restartScan = () => getPort().restart();
 </script>

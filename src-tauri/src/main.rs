@@ -227,13 +227,15 @@ fn start_scanner(
 
             let mut serial_buf: Vec<u8> = vec![0; 37];
             while EMIT_IDS.load(Ordering::SeqCst) {
-                println!("scanning");
                 match port.read(serial_buf.as_mut_slice()) {
-                    Ok(_) => handle
-                        .emit_all("id_scanned", String::from_utf8(serial_buf.clone()).unwrap())
-                        .map_err(|e: tauri::Error| e.to_string())
-                        .unwrap(),
-                    Err(_) => println!("Found no data!"),
+                    Ok(_) => {
+                        println!("Scanned: {:?}", String::from_utf8(serial_buf.clone()));
+                        handle
+                            .emit_all("id_scanned", String::from_utf8(serial_buf.clone()).unwrap())
+                            .map_err(|e: tauri::Error| e.to_string())
+                            .unwrap()
+                    }
+                    Err(_) => {}
                 }
             }
 
