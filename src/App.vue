@@ -184,7 +184,9 @@
           class="inline-block h-3 mr-2 aspect-square w-auto bg-green-400 rounded-full"
         ></div>
         <h3 class="inline font-bold text-lg mr-2" v-if="att.data.full_name">
-          {{ att.data.full_name }}
+          <span v-if="att.data.nickname" class="italic"
+            >({{ att.data.nickname }})&nbsp;</span
+          >{{ att.data.full_name }}
         </h3>
         <el-select-v2
           v-else
@@ -210,7 +212,12 @@
               v-if="checkVal"
               class="!text-white mr-2"
               type="info"
-              >{{ tagName(checkKey, att.data.pronouns) }}</el-tag
+              >{{
+                tagName(
+                  checkKey,
+                  att.data.pronouns as "F" | "M" | "N" | null | undefined
+                )
+              }}</el-tag
             >
           </template>
         </div>

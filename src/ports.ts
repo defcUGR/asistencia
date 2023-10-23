@@ -158,6 +158,7 @@ class Port {
   }
 }
 
+//@ts-ignore Weird stuff going on here
 const ports: Ref<Port[]> = ref([new Port("keyboard")]);
 const scanning = ref(false);
 
