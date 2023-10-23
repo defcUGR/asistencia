@@ -7,7 +7,7 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "asistencia",
+    "productName": "Asistencia DEFC",
     "version": "0.0.0"
   },
   "tauri": {
@@ -30,7 +30,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.dev",
+      "identifier": "es.ugr.defc.asistencia",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -46,7 +46,7 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "asistencia",
+        "title": "Asistencia DEFC",
         "width": 800,
         "height": 600
       }
