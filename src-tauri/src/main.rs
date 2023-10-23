@@ -28,9 +28,9 @@ fn start_scan(app_handle: tauri::AppHandle, port_name: &str) -> Result<(), Strin
     let mut port = serialport::new(port_name, 115_200)
         .timeout(Duration::from_millis(10))
         .open()
-        .expect("Failed to open port");
+        .map_err(|e| e.to_string())?;
 
-    if unsafe { SCAN_HANDLE.lock().unwrap().is_some() } {
+    if unsafe { SCAN_HANDLE.lock().map_err(|e| e.to_string())?.is_some() } {
         return Err("scan already running".to_owned());
     }
     EMIT_IDS.store(true, Ordering::SeqCst);
