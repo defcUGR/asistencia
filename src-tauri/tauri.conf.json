@@ -33,7 +33,7 @@
       "targets": "all",
       "identifier": "es.ugr.defc.asistencia",
       "publisher": "Delegación de Estudiantes de la Facultad de Ciencias de la UGR",
-      "copyrigth": "GPL-3.0",
+      "copyright": "GPL-3.0",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
