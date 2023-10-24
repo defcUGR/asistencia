@@ -133,6 +133,8 @@ struct AttendantChecks {
     is_junta_de_centro: bool,
     is_claustro: bool,
     is_voluntario: bool,
+
+    has_own_vote: bool,
 }
 
 impl AttendantChecks {
@@ -147,6 +149,8 @@ impl AttendantChecks {
             is_voluntario: is(&att.v_actividades)
                 || is(&att.v_comunicacion)
                 || is(&att.v_extension),
+
+            has_own_vote: is(&att.claustro) || is(&att.electo) || is(&att.junta_de_centro),
         }
     }
 }

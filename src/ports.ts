@@ -123,7 +123,7 @@ class Port {
       {
         data: Partial<RawAttendant>;
         new: boolean;
-        checks: AttendantChecks | {};
+        checks: AttendantChecks | undefined;
         time: Date;
         dialogOpen: boolean;
       }[]
@@ -147,7 +147,7 @@ class Port {
           data: {
             tui: readInput,
           },
-          checks: {},
+          checks: undefined,
           new: true,
           time: new Date(),
           dialogOpen: false,

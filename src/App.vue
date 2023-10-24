@@ -377,7 +377,7 @@ const scanned = ref(
   [] as {
     data: Partial<RawAttendant>;
     new: boolean;
-    checks: AttendantChecks | {};
+    checks: AttendantChecks | undefined;
     time: Date;
     dialogOpen: boolean;
   }[]
@@ -399,6 +399,7 @@ const tagName = computed(
       is_claustro: "Claustral",
       is_junta_de_centro: "Junta de Centro",
       is_voluntario: "Voluntari" + end,
+      has_own_vote: "",
     }[key];
   }
 );
@@ -412,6 +413,7 @@ const tagColor = computed(
       is_claustro: "#e3591644",
       is_junta_de_centro: "#167de344",
       is_voluntario: "#e5b5d344",
+      has_own_vote: "",
     }[key])
 );
 

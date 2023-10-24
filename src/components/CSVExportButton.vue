@@ -68,7 +68,7 @@ const props = defineProps<{
   scanned: {
     data: Partial<RawAttendant>;
     new: boolean;
-    checks: AttendantChecks | {};
+    checks: AttendantChecks | undefined;
     time: Date;
     dialogOpen: boolean;
   }[];
@@ -162,17 +162,38 @@ const exportExtra = async (command: "lime_survey") => {
     exportCSVProgress.value = (++counter * 100) / scanned.value.length;
   });
 
+  const data = (() => {
+    switch (command) {
+      case "lime_survey":
+        return scanned.value
+          .filter(
+            (sc) =>
+              sc.checks!.has_own_vote ||
+              (sc.checks!.is_subdelegado &&
+                (
+                  scanned.value.find(
+                    (del) =>
+                      del.data.degree === sc.data.degree &&
+                      del.data.course === sc.data.claustro &&
+                      del.data.group === sc.data.group
+                  ) ?? { checks: { has_own_vote: true } }
+                ).checks?.has_own_vote)
+          )
+          .map(
+            (sc, idx) =>
+              ({
+                tid: idx,
+                firstname: sc.data.name,
+                lastname: sc.data.last_name,
+                email: sc.data.email,
+              } as LimeSurveyExportItem)
+          );
+    }
+  })();
+
   invoke("export_" + command, {
     filePath,
-    data: scanned.value.map(
-      (sc, idx) =>
-        ({
-          tid: idx,
-          firstname: sc.data.name,
-          lastname: sc.data.last_name,
-          email: sc.data.email,
-        } as LimeSurveyExportItem)
-    ),
+    data,
   })
     .catch((e) => raiseError(e))
     .then(() => {
