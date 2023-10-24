@@ -173,28 +173,112 @@ fn process_csv(path: &str) -> Result<Vec<Attendant>, String> {
     Ok(vec)
 }
 
+type CSVExportData = Vec<CSVExportItem>;
+
+#[derive(Debug, Deserialize, Serialize, TS)]
+struct CSVExportItem {
+    new: bool,
+    time: String,
+    tui: String,
+    full_name: String,
+}
+
 #[tauri::command]
-fn export_csv(data: Vec<RawAttendant>) -> Result<String, String> {
+fn export_csv(
+    app_handle: tauri::AppHandle,
+    file_path: &str,
+    data: CSVExportData,
+) -> Result<String, String> {
     // This gets blocked
-    let file_path = match tauri::api::dialog::blocking::FileDialogBuilder::new()
-        .set_title("Guardar CSV")
-        .save_file()
-    {
-        Some(p) => p,
-        None => {
-            return Err("The user did not select a location for the file to be saved".to_owned())
-        }
-    };
+    // let file_path = match tauri::api::dialog::blocking::FileDialogBuilder::new()
+    //     .set_title("Guardar CSV")
+    //     .save_file()
+    // {
+    //     Some(p) => p,
+    //     None => {
+    //         return Err("The user did not select a location for the file to be saved".to_owned())
+    //     }
+    // };
 
     // let mut file = std::fs::File::create(file_path);
     let mut wtr = csv::Writer::from_path(&file_path).map_err(|e| e.to_string())?;
 
     for r in data {
         wtr.serialize(r).map_err(|e| e.to_string())?;
+        app_handle
+            .emit_all("export_csv_progress", None::<()>)
+            .map_err(|e| e.to_string())?;
     }
     wtr.flush().map_err(|e| e.to_string())?;
 
-    Ok(file_path.to_str().unwrap_or("ERROR").to_owned())
+    Ok(file_path.to_owned())
+}
+
+type LimeSurveyExportData = Vec<LimeSurveyExportItem>;
+
+fn default_ok() -> String {
+    String::from("OK")
+}
+
+fn default_es() -> String {
+    String::from("es")
+}
+
+fn default_N() -> String {
+    String::from("N")
+}
+
+fn default_0() -> u32 {
+    0
+}
+
+fn default_1() -> u32 {
+    1
+}
+
+#[derive(Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+struct LimeSurveyExportItem {
+    tid: u32,
+    firstname: String,
+    lastname: String,
+    email: String,
+    #[serde(default = "default_ok")]
+    emailstatus: String,
+    token: Option<String>,
+    #[serde(default = "default_es")]
+    language: String,
+    validfrom: Option<String>,
+    validuntil: Option<String>,
+    #[serde(default = "default_N")]
+    invited: String,
+    #[serde(default = "default_N")]
+    reminded: String,
+    #[serde(default = "default_0")]
+    remindercount: u32,
+    #[serde(default = "default_N")]
+    completed: String,
+    #[serde(default = "default_1")]
+    usesleft: u32,
+}
+
+#[tauri::command]
+fn export_lime_survey(
+    app_handle: tauri::AppHandle,
+    file_path: &str,
+    data: LimeSurveyExportData,
+) -> Result<String, String> {
+    let mut wtr = csv::Writer::from_path(&file_path).map_err(|e| e.to_string())?;
+
+    for r in data {
+        wtr.serialize(r).map_err(|e| e.to_string())?;
+        app_handle
+            .emit_all("export_lime_survey_progress", None::<()>)
+            .map_err(|e| e.to_string())?;
+    }
+    wtr.flush().map_err(|e| e.to_string())?;
+
+    Ok(file_path.to_owned())
 }
 
 fn main() {
@@ -204,7 +288,8 @@ fn main() {
             start_scan,
             get_serial_ports,
             process_csv,
-            export_csv
+            export_csv,
+            export_lime_survey
         ])
         .on_window_event(move |ev| match *ev.event() {
             WindowEvent::CloseRequested { .. } => EMIT_IDS.store(false, Ordering::SeqCst),

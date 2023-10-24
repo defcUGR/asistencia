@@ -8,7 +8,7 @@ import {
 import type { Attendant } from "../src-tauri/bindings/Attendant";
 import type { RawAttendant } from "../src-tauri/bindings/RawAttendant";
 import type { AttendantChecks } from "../src-tauri/bindings/AttendantChecks";
-import { WatchStopHandle } from "vue";
+import { EffectScope, WatchStopHandle } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { tryit } from "radash";
 import { raiseError } from "./error";
@@ -35,9 +35,11 @@ export const KEYBOARD_PORT_KEY = "keyboard";
 class Port {
   private _info: ComputedPortInfo;
   private watcher_unlisten: UnlistenFn | WatchStopHandle | undefined;
+  private _keyboard_scope: undefined | EffectScope;
 
   constructor(info: ComputedPortInfo) {
     this._info = info;
+    // if (info === "keyboard") this._keyboard_scope = effectScope();
   }
 
   get info() {
@@ -59,18 +61,21 @@ class Port {
 
   public async install(input: Ref<string>) {
     if (this._info === "keyboard") {
-      onKeyStroke(
-        ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        (e) => {
+      this._keyboard_scope = effectScope();
+      this._keyboard_scope?.run(() => {
+        onKeyStroke(
+          ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+          (e) => {
+            e.preventDefault();
+            if (PortService.scanning) input.value += e.key;
+          },
+          { dedupe: true }
+        );
+        onKeyStroke(["Delete", "Backspace"], (e) => {
           e.preventDefault();
-          if (PortService.scanning) input.value += e.key;
-        },
-        { dedupe: true }
-      );
-      onKeyStroke(["Delete", "Backspace"], (e) => {
-        e.preventDefault();
-        if (input.value.length > 0 && PortService.scanning)
-          input.value = input.value.slice(0, input.value.length - 1);
+          if (input.value.length > 0 && PortService.scanning)
+            input.value = input.value.slice(0, input.value.length - 1);
+        });
       });
     } else {
       const [err, _] = await tryit(invoke)("start_scan", {
@@ -80,13 +85,19 @@ class Port {
         raiseError(err);
         return false;
       }
-      PortService.scanning = true;
     }
+    PortService.scanning = true;
     return true;
   }
 
+  public async uninstall() {
+    if (this._info === "keyboard" && this._keyboard_scope)
+      this._keyboard_scope?.stop();
+  }
+
   public stop() {
-    return new Promise<undefined | true>((resolve) => {
+    new Promise<undefined | boolean>((resolve) => {
+      if (!PortService.scanning) resolve(false);
       PortService.scanning = false;
       if (this._info === "keyboard") resolve(undefined);
       emit("close_scan");

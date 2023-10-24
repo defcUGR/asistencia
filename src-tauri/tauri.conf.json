@@ -18,7 +18,8 @@
         "open": ".+"
       },
       "dialog": {
-        "open": true
+        "open": true,
+        "save": true
       },
       "path": {
         "all": true

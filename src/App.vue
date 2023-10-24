@@ -51,7 +51,7 @@
           <div class="font-light italic">
             Error procesando
             <span
-              class="bg-zinc-950 px-1.5 py-0.5 rounded cursor-pointer"
+              class="bg-zinc-600 text-white dark:bg-zinc-950 px-1.5 py-0.5 rounded cursor-pointer"
               @click.stop="systemOpenFile"
               >{{ filePath }}</span
             >:<br />
@@ -63,7 +63,7 @@
           <div class="font-light italic">
             Procesado
             <span
-              class="bg-zinc-950 px-1.5 py-0.5 rounded cursor-pointer"
+              class="bg-zinc-600 text-white dark:bg-zinc-950 px-1.5 py-0.5 rounded cursor-pointer"
               @click.stop="systemOpenFile"
               >{{ filePath }}</span
             >
@@ -76,15 +76,6 @@
       </div>
       <h2 class="text-xl my-2">Puertos disponibles</h2>
       <ul>
-        <!-- <li @click="selectedPort = 0">
-          <el-card
-            shadow="hover"
-            :class="selectedPort === 0 ? '!border-sky-400' : ''"
-          >
-            <h3 class="font-bold text-lg">Teclado</h3>
-            <p>Simula la entrada del lector usando el teclado</p>
-          </el-card>
-        </li> -->
         <li
           v-for="(port, index) in ports"
           @click="selectedPort = index"
@@ -130,20 +121,35 @@
     <template v-else>
       <!--* Page Title -->
       <div class="flex flex-row justify-between items-center mb-3">
-        <h1
-          class="text-2xl font-semibold"
-          :class="scanning ? '' : 'text-rose-400'"
-        >
-          {{ scanning ? "Escaneando..." : "Escáner pausado" }}
-        </h1>
+        <div class="flex flex-row gap-2">
+          <el-button
+            class="!px-1 !py-0."
+            text
+            type="info"
+            :_disabled="scanning"
+            @click="
+              () =>
+                scanning
+                  ? raiseError('Pausa el escáner para poder volver atrás')
+                  : goBack()
+            "
+          >
+            <el-icon class="el-icon--left !mr-0.5"><IconChevronLeft /></el-icon>
+            Volver
+          </el-button>
+          <h1
+            class="text-2xl font-semibold"
+            :class="scanning ? '' : 'text-rose-400'"
+          >
+            {{ scanning ? "Escaneando..." : "Escáner pausado" }}
+          </h1>
+        </div>
+
         <div>
-          <el-button text type="info" @click="dataDialogOpen = true"
+          <el-button text @click="dataDialogOpen = true" class="mr-2"
             >Ver datos completos</el-button
           >
-          <el-button type="primary" @click="exportCSV">
-            <el-icon class="el-icon--left"><IconFileTypeCsv /></el-icon>
-            Exportar CSV
-          </el-button>
+          <CSVExportButton :scanned="scanned" />
         </div>
       </div>
 
@@ -212,7 +218,7 @@
             <el-tag
               :color="tagColor(checkKey)"
               v-if="checkVal"
-              class="!text-white mr-2"
+              class="!dark:text-white mr-2"
               type="info"
               >{{
                 tagName(
@@ -268,7 +274,7 @@ import {
   IconPlayerPlay,
   IconTrashX,
   IconCode,
-  IconFileTypeCsv,
+  IconChevronLeft,
 } from "@tabler/icons-vue";
 import { invoke } from "@tauri-apps/api";
 import { open } from "@tauri-apps/api/dialog";
@@ -283,25 +289,35 @@ import format from "date-fns/format";
 import { PortService } from "./ports";
 import { raiseError } from "./error";
 import { tryit } from "radash";
+import { ElMessage } from "element-plus";
+
+const { appContext } = getCurrentInstance()!;
 
 useDark();
 
 const configured = ref(false);
+console.info("set configured", configured);
 
 const dataDialogOpen = ref(false);
+console.info("set dataDialogOpen", dataDialogOpen);
 
 PortService.fetchPorts();
+console.info("_set fetchPorts");
 
 const ports = PortService.usePorts;
 const selectedPort = ref();
+console.info("set selectedPort", selectedPort);
 
 const userData: Ref<Attendant[] | undefined> = ref();
+console.info("set userData", userData);
 
 const filePath = ref();
 const processingFile = ref(true);
 const fileError = ref();
 const openFile = async () => {
-  fileError.value = false;
+  console.info("openFile enter");
+
+  processingFile.value = false;
 
   //* Pick
   const [error, path] = await tryit(open)({
@@ -318,11 +334,22 @@ const openFile = async () => {
     raiseError(error);
     return;
   }
+  if (!path) {
+    ElMessage.info(
+      {
+        message: "Archivo anterior conservado",
+      },
+      appContext
+    );
+    return;
+  }
   if (Array.isArray(path)) {
     raiseError("Sólo un archivo CSV soportado");
     return;
   }
   filePath.value = path;
+  fileError.value = false;
+  processingFile.value = true;
 
   //* Process
   try {
@@ -389,6 +416,8 @@ const tagColor = computed(
 );
 
 const updateAttendant = (idx: number) => {
+  console.info("updateAttendant");
+
   const fdUser = userData.value?.find(
     (usr) => usr.raw.full_name === scanned.value[idx].data.full_name
   );
@@ -411,16 +440,12 @@ const updateAttendant = (idx: number) => {
 
 const deleteAttendant = (idx: number) => scanned.value.splice(idx, 1);
 
-const exportCSV = () =>
-  invoke("export_csv", { data: scanned.value.map((sc) => sc.data) }).catch(
-    (error) => raiseError("Error exportando CSV: " + error)
-  );
-
 const scanning = PortService.useScanning();
 
 const getPort = () => ports.value[selectedPort.value];
 
 const enterScanning = async () => {
+  console.info("go scanning");
   configured.value = true;
 
   console.info("Mounting port", ports.value[selectedPort.value]);
@@ -432,4 +457,15 @@ const enterScanning = async () => {
 const stopScan = () => getPort().stop();
 
 const restartScan = () => getPort().restart();
+
+const goBack = () => {
+  if (scanning.value) {
+    raiseError("Tried to unlisten port while scanning");
+    return;
+  }
+  getPort().unlisten();
+  getPort().uninstall();
+  configured.value = false;
+  console.log("back to configure");
+}; // I know that it is already paused
 </script>

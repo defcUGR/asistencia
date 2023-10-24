@@ -1,30 +1,43 @@
 <template>
-  <div class="fixed bottom-16 right-4">
+  <div class="fixed bottom-16 right-4 z-50">
     <Transition name="error">
-      <el-card shadow="always" v-if="error" class="relative w-72">
-        <div class="!flex !flex-row gap-2">
-          <IconExclamationCircle
-            class="text-rose-500 block h-10 w-10 flex-shrink-0"
-          ></IconExclamationCircle>
-          <div class="">
-            <strong class="text-lg font-bold text-rose-500">Error</strong>
-            <p>{{ error.msg }}</p>
+      <el-tooltip
+        content="Click en botón central para cerrar"
+        placement="right-start"
+        :effect="isDark ? 'light' : 'effect'"
+      >
+        <el-card
+          shadow="always"
+          v-if="error"
+          class="relative w-72"
+          @click.middle.prevent="clearError"
+        >
+          <div class="!flex !flex-row gap-2">
+            <IconExclamationCircle
+              class="text-rose-500 block h-10 w-10 flex-shrink-0"
+            ></IconExclamationCircle>
+            <div class="">
+              <strong class="text-lg font-bold text-rose-500">Error</strong>
+              <p>{{ error.msg }}</p>
+            </div>
           </div>
-        </div>
-        <el-progress
-          class="absolute -bottom-5 w-[21.5rem] -left-5"
-          :percentage="percentage"
-          :format="() => ''"
-        />
-      </el-card>
+          <el-progress
+            class="absolute -bottom-5 w-[21.5rem] -left-5"
+            :percentage="percentage"
+            :format="() => ''"
+          />
+        </el-card>
+      </el-tooltip>
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { IconExclamationCircle } from "@tabler/icons-vue";
-import { useInterval } from "@vueuse/core";
-import { useError } from "../error";
+import { useDark, useInterval } from "@vueuse/core";
+import { useError, clearError } from "../error";
+
+const isDark = useDark();
 
 const error = useError();
 
