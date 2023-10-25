@@ -105,14 +105,16 @@ class Port {
     });
   }
 
-  public async restart() {
-    if (this._info === "keyboard") return;
-    const [err, _] = await tryit(invoke)("start_scan", {
-      portName: this._info.port_name,
-    });
-    if (err) {
-      raiseError(err);
-      return;
+  public async restart(input: Ref<string>) {
+    if (this._info === "keyboard") await this.install(input);
+    else {
+      const [err, _] = await tryit(invoke)("start_scan", {
+        portName: this._info.port_name,
+      });
+      if (err) {
+        raiseError(err);
+        return;
+      }
     }
   }
 

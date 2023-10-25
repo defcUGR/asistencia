@@ -477,7 +477,7 @@ const enterScanning = async () => {
 
 const stopScan = () => getPort().stop();
 
-const restartScan = () => getPort().restart();
+const restartScan = () => getPort().restart(input);
 
 const goBack = () => {
   if (scanning.value) {
