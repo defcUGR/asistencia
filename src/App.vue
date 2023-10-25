@@ -158,82 +158,96 @@
         <VueJsonPretty :data="userData" virtual :height="600" />
       </el-dialog>
 
-      <el-card
-        v-for="(att, idx) in scanned"
-        :key="att.data.tui ?? ''"
-        class="mt-2 relative !min-h-[110px]"
-      >
-        <el-text class="!absolute !right-5 !top-5" type="info">{{
-          format(att.time, "HH:mm")
-        }}</el-text>
-
-        <!--* Action buttons -->
-        <div class="absolute right-5 bottom-5">
-          <el-button @click="att.dialogOpen = true">
-            <el-icon class="el-icon--left"><IconCode /></el-icon>
-            Datos
-          </el-button>
-          <el-button type="danger" @click="deleteAttendant(idx)"
-            ><el-icon class="el-icon--left"><IconTrashX /></el-icon
-            >Eliminar</el-button
-          >
-        </div>
-
-        <!--* Data dialog -->
-        <el-dialog
-          v-model="att.dialogOpen"
-          :title="`Datos de ${att.data.full_name}`"
+      <div class="pb-16">
+        <el-card
+          v-for="(att, idx) in scanned"
+          :key="att.data.tui ?? ''"
+          class="mt-2 relative !min-h-[110px]"
         >
-          <VueJsonPretty :data="att" />
-        </el-dialog>
+          <IconUserCheck
+            v-if="att.stillPresent"
+            @click="() => (att.stillPresent = false)"
+            class="!absolute !right-16 !top-5 w-5 h-5"
+          />
+          <IconUserOff
+            @click="() => (att.stillPresent = true)"
+            v-else
+            class="!absolute !right-16 !top-5 w-5 h-5"
+          />
+          <el-text class="!absolute !right-5 !top-5" type="info">{{
+            format(att.time, "HH:mm")
+          }}</el-text>
 
-        <div
-          v-if="att.new"
-          class="inline-block h-3 mr-2 aspect-square w-auto bg-green-400 rounded-full"
-        ></div>
-        <h3 class="inline font-bold text-lg mr-2" v-if="att.data.full_name">
-          <span v-if="att.data.nickname" class="italic"
-            >({{ att.data.nickname }})&nbsp;</span
-          >{{ att.data.full_name }}
-        </h3>
-        <el-select-v2
-          v-else
-          v-model="att.data.full_name"
-          :options="availableNames"
-          filterable
-          placeholder="Seleccionar nombre"
-          class="mr-2"
-          @change="updateAttendant(idx)"
-        ></el-select-v2>
-        <span class="text-zinc-500">{{ att.data.tui }}</span>
-
-        <p class="mb-1">
-          {{ att.data.degree }} {{ att.data.course ? "·" : "" }}
-          {{ att.data.course }} {{ att.data.group ? "·" : "" }}
-          {{ att.data.group }}
-        </p>
-
-        <div>
-          <template v-for="(checkVal, checkKey) in att.checks">
-            <el-tag
-              :color="tagColor(checkKey)"
-              v-if="checkVal"
-              class="!dark:text-white mr-2"
-              type="info"
-              >{{
-                tagName(
-                  checkKey,
-                  att.data.pronouns as "F" | "M" | "N" | null | undefined
-                )
-              }}</el-tag
+          <!--* Action buttons -->
+          <div class="absolute right-5 bottom-5">
+            <el-button @click="att.dialogOpen = true">
+              <el-icon class="el-icon--left"><IconCode /></el-icon>
+              Datos
+            </el-button>
+            <el-button type="danger" @click="deleteAttendant(idx)"
+              ><el-icon class="el-icon--left"><IconTrashX /></el-icon
+              >Eliminar</el-button
             >
-          </template>
-        </div>
-      </el-card>
+          </div>
+
+          <!--* Data dialog -->
+          <el-dialog
+            v-model="att.dialogOpen"
+            :title="`Datos de ${att.data.full_name}`"
+          >
+            <VueJsonPretty :data="att" />
+          </el-dialog>
+
+          <div
+            v-if="att.new"
+            class="inline-block h-3 mr-2 aspect-square w-auto bg-green-400 rounded-full"
+          ></div>
+          <h3 class="inline font-bold text-lg mr-2" v-if="att.data.full_name">
+            <span v-if="att.data.nickname" class="italic"
+              >({{ att.data.nickname }})&nbsp;</span
+            >{{ att.data.full_name }}
+          </h3>
+          <el-select-v2
+            v-else
+            v-model="att.data.full_name"
+            :options="availableNames"
+            filterable
+            placeholder="Seleccionar nombre"
+            class="mr-2"
+            @change="updateAttendant(idx)"
+          ></el-select-v2>
+          <span class="text-zinc-500">{{ att.data.tui }}</span>
+
+          <p class="mb-1">
+            {{ att.data.degree }} {{ att.data.course ? "·" : "" }}
+            {{ att.data.course }} {{ att.data.group ? "·" : "" }}
+            {{ att.data.group }}
+          </p>
+
+          <div>
+            <template v-for="(checkVal, checkKey) in att.checks">
+              <el-tag
+                :color="tagColor(checkKey)"
+                v-if="checkVal"
+                class="!dark:text-white mr-2"
+                type="info"
+                >{{
+                  tagName(
+                    checkKey,
+                    att.data.pronouns as "F" | "M" | "N" | null | undefined
+                  )
+                }}</el-tag
+              >
+            </template>
+          </div>
+        </el-card>
+      </div>
 
       <!--* Bottom buttons -->
-      <div class="w-screen fixed bottom-0 left-0 p-4">
-        <p class="mb-4 w-full text-center italic text-zinc-500">
+      <div
+        class="w-screen fixed bottom-0 left-0 p-4 bg-white dark:bg-[#141414]"
+      >
+        <p class="mb-4 w-full text-center italic text-zinc-300">
           {{ input }}
         </p>
         <el-button
@@ -275,6 +289,8 @@ import {
   IconTrashX,
   IconCode,
   IconChevronLeft,
+  IconUserCheck,
+  IconUserOff,
 } from "@tabler/icons-vue";
 import { invoke } from "@tauri-apps/api";
 import { open } from "@tauri-apps/api/dialog";
@@ -380,6 +396,7 @@ const scanned = ref(
     checks: AttendantChecks | undefined;
     time: Date;
     dialogOpen: boolean;
+    stillPresent: boolean;
   }[]
 );
 
@@ -437,6 +454,7 @@ const updateAttendant = (idx: number) => {
     new: true,
     time: scanned.value[idx].time,
     dialogOpen: false,
+    stillPresent: true,
   };
 };
 

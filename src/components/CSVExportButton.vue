@@ -168,16 +168,17 @@ const exportExtra = async (command: "lime_survey") => {
         return scanned.value
           .filter(
             (sc) =>
-              sc.checks!.has_own_vote ||
-              (sc.checks!.is_subdelegado &&
-                (
-                  scanned.value.find(
-                    (del) =>
-                      del.data.degree === sc.data.degree &&
-                      del.data.course === sc.data.claustro &&
-                      del.data.group === sc.data.group
-                  ) ?? { checks: { has_own_vote: true } }
-                ).checks?.has_own_vote)
+              sc.stillPresent &&
+              (sc.checks!.has_own_vote ||
+                (sc.checks!.is_subdelegado &&
+                  (
+                    scanned.value.find(
+                      (del) =>
+                        del.data.degree === sc.data.degree &&
+                        del.data.course === sc.data.claustro &&
+                        del.data.group === sc.data.group
+                    ) ?? { checks: { has_own_vote: true } }
+                  ).checks?.has_own_vote))
           )
           .map(
             (sc, idx) =>

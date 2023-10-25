@@ -126,6 +126,7 @@ class Port {
         checks: AttendantChecks | undefined;
         time: Date;
         dialogOpen: boolean;
+        stillPresent: boolean;
       }[]
     >
   ) {
@@ -135,15 +136,16 @@ class Port {
       const fdUser = userData.value?.find((usr) => usr.raw.tui === readInput);
 
       if (fdUser) {
-        scanned.value.push({
+        scanned.value.unshift({
           data: fdUser.raw,
           checks: fdUser.checks,
           new: false,
           time: new Date(),
           dialogOpen: false,
+          stillPresent: true,
         });
       } else {
-        scanned.value.push({
+        scanned.value.unshift({
           data: {
             tui: readInput,
           },
@@ -151,6 +153,7 @@ class Port {
           new: true,
           time: new Date(),
           dialogOpen: false,
+          stillPresent: true,
         });
       }
     };
