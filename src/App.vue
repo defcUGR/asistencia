@@ -466,12 +466,13 @@ const getPort = () => ports.value[selectedPort.value];
 
 const enterScanning = async () => {
   console.info("go scanning");
-  configured.value = true;
 
   console.info("Mounting port", ports.value[selectedPort.value]);
   const installSuccess = await getPort().install(input);
   if (!installSuccess) return;
   getPort().listen(userData, input, scanned);
+
+  configured.value = true;
 };
 
 const stopScan = () => getPort().stop();
