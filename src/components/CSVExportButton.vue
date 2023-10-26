@@ -71,6 +71,7 @@ const props = defineProps<{
     checks: AttendantChecks | undefined;
     time: Date;
     dialogOpen: boolean;
+    stillPresent: boolean;
   }[];
 }>();
 const { scanned } = toRefs(props);
@@ -170,12 +171,14 @@ const exportExtra = async (command: "lime_survey") => {
             (sc) =>
               sc.stillPresent &&
               (sc.checks!.has_own_vote ||
+                sc.checks!.is_delegado ||
                 (sc.checks!.is_subdelegado &&
                   (
                     scanned.value.find(
                       (del) =>
+                        del.checks?.is_delegado &&
                         del.data.degree === sc.data.degree &&
-                        del.data.course === sc.data.claustro &&
+                        del.data.course === sc.data.course &&
                         del.data.group === sc.data.group
                     ) ?? { checks: { has_own_vote: true } }
                   ).checks?.has_own_vote))
