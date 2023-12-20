@@ -228,7 +228,7 @@
             <template v-for="(checkVal, checkKey) in att.checks">
               <el-tag
                 :color="tagColor(checkKey)"
-                v-if="checkVal"
+                v-if="checkVal && checkKey != 'has_own_vote'"
                 class="!dark:text-white mr-2"
                 type="info"
                 >{{
