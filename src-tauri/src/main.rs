@@ -328,6 +328,7 @@ fn start_scanner(
                 }
             }
 
+            std::mem::drop(port);
             handle.unlisten(close_listen_id);
             handle
                 .emit_all("scan_closed", true)
