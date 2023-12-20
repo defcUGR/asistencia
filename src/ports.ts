@@ -111,10 +111,8 @@ class Port {
       const [err, _] = await tryit(invoke)("start_scan", {
         portName: this._info.port_name,
       });
-      if (err) {
-        raiseError(err);
-        return;
-      }
+      if (err) raiseError(err);
+      else PortService.scanning = true;
     }
   }
 
