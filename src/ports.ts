@@ -135,6 +135,11 @@ class Port {
     const pushScan = (readInput: string) => {
       if (!PortService.scanning) return;
 
+      if (scanned.value.some((s) => s.data.tui === readInput)) {
+        raiseError("Asistente ya registrado");
+        return;
+      }
+
       const fdUser = userData.value?.find((usr) => usr.raw.tui === readInput);
 
       if (fdUser) {
