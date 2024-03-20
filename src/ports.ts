@@ -76,6 +76,19 @@ class Port {
           if (input.value.length > 0 && PortService.scanning)
             input.value = input.value.slice(0, input.value.length - 1);
         });
+        onKeyStroke(["V", "v"], (e) => {
+          e.preventDefault();
+          if (PortService.scanning && e.ctrlKey)
+            invoke("paste").then((res) => {
+              if (parseInt(res as string) && /\d{7}/.test(res as string)) {
+                input.value = res as string;
+              } else {
+                raiseError(
+                  "El contenido pegado no es un número de TUI válido."
+                );
+              }
+            });
+        });
       });
     } else {
       const [err, _] = await tryit(invoke)("start_scan", {
@@ -132,6 +145,11 @@ class Port {
   ) {
     const pushScan = (readInput: string) => {
       if (!PortService.scanning) return;
+
+      if (!(readInput.length === 7 && /\d{7}/.test(readInput))) {
+        raiseError("Código escaneado no válido: " + readInput);
+        return;
+      }
 
       if (scanned.value.some((s) => s.data.tui === readInput)) {
         raiseError("Asistente ya registrado");

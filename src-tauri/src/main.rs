@@ -17,10 +17,9 @@ static mut SCAN_HANDLE: Mutex<Option<JoinHandle<Result<(), String>>>> = Mutex::n
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn copy(contents: &str) -> Result<&str, String> {
+fn paste() -> Result<String, String> {
     let mut clipboard = Clipboard::new().map_err(|e| e.to_string())?;
-    clipboard.set_text(contents).map_err(|e| e.to_string())?;
-    Ok(contents)
+    clipboard.get_text().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -288,7 +287,7 @@ fn export_lime_survey(
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            copy,
+            paste,
             start_scan,
             get_serial_ports,
             process_csv,
